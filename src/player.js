@@ -15,8 +15,13 @@ class Player {
 		this.totalTicks = 0;
 		this.events = [];
 		this.eventListeners = {};
+		this.externalTimeSource = null;
 
 		if (typeof(eventHandler) === 'function') this.on('midiEvent', eventHandler);
+	}
+
+	setExternalTimeSource(source) {
+		this.externalTimeSource = source;
 	}
 
 	// Only for NodeJS
@@ -141,7 +146,7 @@ class Player {
 
 		// Initialize
 		if (!this.startTime) {
-			this.startTime = (new Date()).getTime();
+			this.startTime = this.externalTimeSource ? this.externalTimeSource() : new Date().getTime();
 		}
 
 		// Start play loop
@@ -223,7 +228,8 @@ class Player {
 	}
 
 	getCurrentTick() {
-		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
+		var currentTime = this.externalTimeSource ? this.externalTimeSource() : new Date().getTime();
+		return Math.round((currentTime - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}
 
 	emitEvent(event) {
