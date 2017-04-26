@@ -9,6 +9,7 @@ class Track	{
 		this.delta = 0;
 		this.runningDelta = 0;
 		this.events = [];
+		this.markersToLyrics = false;
 	}
 
 	reset() {
@@ -129,6 +130,10 @@ class Track	{
 					break;
 				case 0x06: // Marker
 					eventJson.name = 'Marker';
+					if (this.markersToLyrics) {
+						eventJson.name = 'Lyric';
+					}
+					eventJson.string = this.getStringData(eventStartIndex);
 					break;
 				case 0x07: // Cue Point
 					eventJson.name = 'Cue Point';
@@ -274,5 +279,9 @@ class Track	{
 		}
 
 		return false;
+	}
+
+	setMarkersToLyrics(value) {
+		this.markersToLyrics = value;
 	}
 }

@@ -15,8 +15,23 @@ class Player {
 		this.totalTicks = 0;
 		this.events = [];
 		this.eventListeners = {};
+		this.externalTimeSource = null;
+		this.markersToLyrics = false;
 
 		if (typeof(eventHandler) === 'function') this.on('midiEvent', eventHandler);
+	}
+
+	setExternalTimeSource(source) {
+		this.externalTimeSource = source;
+	}
+
+	setMarkersToLyrics(value) {
+		this.markersToLyrics = value;
+		if (this.tracks) {
+			this.tracks.forEach(function(track) {
+				track.setMarkersToLyrics(value);
+			});
+		}
 	}
 
 	// Only for NodeJS
@@ -81,7 +96,9 @@ class Player {
 		this.buffer.forEach(function(byte, index) {
 			if (Utils.bytesToLetters(this.buffer.slice(index, index + 4)) == 'MTrk') {
 				var trackLength = Utils.bytesToNumber(this.buffer.slice(index + 4, index + 8));
-				this.tracks.push(new Track(this.tracks.length, this.buffer.slice(index + 8, index + 8 + trackLength)));
+				var track = new Track(this.tracks.length, this.buffer.slice(index + 8, index + 8 + trackLength));
+				track.setMarkersToLyrics(this.markersToLyrics);
+				this.tracks.push(track);
 			}
 		}, this);
 
@@ -141,7 +158,7 @@ class Player {
 
 		// Initialize
 		if (!this.startTime) {
-			this.startTime = (new Date()).getTime();
+			this.startTime = this.externalTimeSource ? this.externalTimeSource() : new Date().getTime();
 		}
 
 		// Start play loop
@@ -223,7 +240,8 @@ class Player {
 	}
 
 	getCurrentTick() {
-		return Math.round(((new Date()).getTime() - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
+		var currentTime = this.externalTimeSource ? this.externalTimeSource() : new Date().getTime();
+		return Math.round((currentTime - this.startTime) / 1000 * (this.division * (this.tempo / 60))) + this.startTick;
 	}
 
 	emitEvent(event) {
